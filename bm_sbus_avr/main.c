@@ -73,7 +73,7 @@ void write(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3)
 
 	register uint8_t n = 0;
 
-	// Write each of the 8 bits
+	// Count parity
 	for (i = 0; i < 8; i++)
 	{
 		for (n = 0; n < 4; n++)
@@ -125,33 +125,45 @@ void write(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3)
 
 	if (parity == 'o')
 	{
-		sync();
+		uint8_t val = 0;
 		for (n = 0; n < 4; n++)
 		{
 			if (p[n] & 1)
 			{
-				PORTB &= ~(1 << n); // send 0
+				val &= ~(1 << n); // send 0
 			}
 			else
 			{
-				PORTB |= (1 << n); // send 1
+				val |= (1 << n); // send 1
 			}
 		}
+		if(inv_logic)
+		{
+			val = (~val) & 0x0F;
+		}
+		sync();
+		PORTB = val;
 	}
 	if (parity == 'e')
 	{
-		sync();
+		uint8_t val = 0;
 		for (n = 0; n < 4; n++)
 		{
 			if (p[n] & 1)
 			{
-				PORTB |= (1 << n); // send 1
+				val |= (1 << n); // send 1
 			}
 			else
 			{
-				PORTB &= ~(1 << n); // send 0
+				val &= ~(1 << n); // send 0
 			}
 		}
+		if(inv_logic)
+		{
+			val = (~val) & 0x0F;
+		}
+		sync();
+		PORTB = val;
 	}
 
 	// restore pin to natural state
@@ -178,7 +190,6 @@ void write(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3)
 int main(void)
 {
 	init(false, 'e', 1);
-	/* Replace with your application code */
 	while (1)
 	{
 		write(0x00, 0xFF, 0x55, 'F');
