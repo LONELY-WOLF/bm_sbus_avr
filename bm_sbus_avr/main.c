@@ -15,6 +15,9 @@ bool inv_logic = false;
 char parity = 'n';
 uint8_t stop_bits = 1;
 
+uint8_t sbuf[5][25];
+uint8_t sbus_data[25] = {0x0f,0x01,0x04,0x20,0x00,0xff,0x07,0x40,0x00,0x02,0x10,0x80,0x2c,0x64,0x21,0x0b,0x59,0x08,0x40,0x00,0x02,0x10,0x80,0x00,0x00};
+
 void sync()
 {
 	while (!(TIFR2 & 2))
@@ -26,6 +29,14 @@ void sync()
 
 void init(bool _inv_logic, char _parity, uint8_t _stop_bits)
 {
+	for(uint8_t n = 0; n < 5; n++)
+	{
+		sbuf[n][0] = 0x0F;
+		for(uint8_t i = 1; i < 25; i++)
+		{
+			sbuf[n][i] = 0x00;
+		}
+	}
 	inv_logic = _inv_logic;
 	parity = _parity;
 	stop_bits = _stop_bits;
@@ -187,13 +198,83 @@ void write(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3)
 	//sei();
 }
 
+void write_frame()
+{
+	for(uint8_t i = 0; i < 25; i++)
+	{
+		write(sbuf[0][i], sbuf[1][i], sbuf[2][i], sbuf[3][i]);
+	}
+}
+
+void write_byte(uint8_t b)
+{
+	while(!(UCSR0A & (1<<UDRE0)))
+	{
+
+	}
+	UDR0 = b;
+}
+
+uint8_t read_byte()
+{
+	while(!(UCSR0A & (1<<RXC0)))
+	{
+	
+	}
+	return UDR0;
+}
+
 int main(void)
 {
-	init(false, 'e', 1);
+	//Init USART
+	UCSR0C |= (1 << USBS0); //2 stop bits
+	UBRR0L = 103; //9600
+	UCSR0B |= (1<<RXEN0) | (1<<TXEN0);
+
+	//Init SW USART
+	init(true, 'e', 2);
+	//while (1)
+	//{
+		//write_byte('0');
+		//_delay_ms(1000);
+	//}
+	while(1)
+	{
+		
+		write_byte('2');
+		while(read_byte() != 0x0F)
+		{
+			
+		}
+		
+		write_byte('3');
+		uint8_t cam = read_byte();
+		sbuf[0][24] = 0xFF;
+		for(uint8_t i = 2; i < 25; i++)
+		{
+			sbuf[0][i] = read_byte();
+		}
+		if(sbuf[0][24] == 0)
+		{
+			write_frame();
+			write_byte('0');
+		}
+		write_byte('1');
+	}
 	while (1)
 	{
-		write(0x00, 0xFF, 0x55, 'F');
-		_delay_ms(1000);
+		for(uint8_t i = 0; i < 100; i++)
+		{
+			write_frame();
+			_delay_ms(7);
+		}
+		sbuf[0][2] = 0x00;
+		for(uint8_t i = 0; i < 100; i++)
+		{
+			write_frame();
+			_delay_ms(7);
+		}
+		sbuf[0][2] = 0xFF;
 	}
 }
 
