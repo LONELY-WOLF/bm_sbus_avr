@@ -246,7 +246,8 @@ int main(void)
 		{
 			
 		}
-		
+		sbuf[0][0] = 0x0F;
+		sbuf[0][1] = 0x00;
 		write_byte('3');
 		uint8_t cam = read_byte();
 		sbuf[0][24] = 0xFF;
