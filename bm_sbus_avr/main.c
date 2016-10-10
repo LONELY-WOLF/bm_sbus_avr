@@ -16,7 +16,8 @@ char parity = 'n';
 uint8_t stop_bits = 1;
 
 uint8_t sbuf[5][25];
-uint8_t sbus_data[25] = {0x0f,0x01,0x04,0x20,0x00,0xff,0x07,0x40,0x00,0x02,0x10,0x80,0x2c,0x64,0x21,0x0b,0x59,0x08,0x40,0x00,0x02,0x10,0x80,0x00,0x00};
+uint8_t cam_to_buf[5] = {0, 1, 2, 3, 4};
+//uint8_t sbus_data[25] = {0x0f,0x01,0x04,0x20,0x00,0xff,0x07,0x40,0x00,0x02,0x10,0x80,0x2c,0x64,0x21,0x0b,0x59,0x08,0x40,0x00,0x02,0x10,0x80,0x00,0x00};
 
 void sync()
 {
@@ -202,7 +203,7 @@ void write_frame()
 {
 	for(uint8_t i = 0; i < 25; i++)
 	{
-		write(sbuf[0][i], sbuf[1][i], sbuf[2][i], sbuf[3][i]);
+		write(sbuf[cam_to_buf[0]][i], sbuf[cam_to_buf[1]][i], sbuf[cam_to_buf[2]][i], sbuf[cam_to_buf[3]][i]);
 	}
 }
 
@@ -240,23 +241,24 @@ int main(void)
 	//}
 	while(1)
 	{
-		
 		write_byte('2');
 		while(read_byte() != 0x0F)
 		{
 			
-		}
-		sbuf[0][0] = 0x0F;
-		sbuf[0][1] = 0x00;
+		};
 		write_byte('3');
 		uint8_t cam = read_byte();
-		sbuf[0][24] = 0xFF;
-		for(uint8_t i = 2; i < 25; i++)
+		uint8_t ctb = cam_to_buf[4]; //buffer
+		sbuf[ctb][0] = 0x0F;
+		sbuf[ctb][24] = 0xFF;
+		for(uint8_t i = 1; i < 25; i++)
 		{
-			sbuf[0][i] = read_byte();
+			sbuf[ctb][i] = read_byte();
 		}
-		if(sbuf[0][24] == 0)
+		if(sbuf[ctb][24] == 0)
 		{
+			cam_to_buf[4] = cam_to_buf[cam];
+			cam_to_buf[cam] = ctb;
 			write_frame();
 			write_byte('0');
 		}
