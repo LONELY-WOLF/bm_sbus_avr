@@ -248,6 +248,7 @@ int main(void)
 		};
 		write_byte('3');
 		uint8_t cam = read_byte();
+		write_byte(cam + 48);
 		uint8_t ctb = cam_to_buf[4]; //buffer
 		sbuf[ctb][0] = 0x0F;
 		sbuf[ctb][24] = 0xFF;
@@ -262,7 +263,7 @@ int main(void)
 			write_frame();
 			write_byte('0');
 		}
-		write_byte('1');
+		write_byte('_');
 	}
 	while (1)
 	{
